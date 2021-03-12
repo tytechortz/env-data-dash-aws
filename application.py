@@ -27,6 +27,7 @@ today = time.strftime("%Y-%m-%d")
 app = dash.Dash()
 application = app.server
 
+
 app.config.suppress_callback_exceptions = True
 
 app.layout = html.Div([
