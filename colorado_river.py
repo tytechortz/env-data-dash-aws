@@ -5,6 +5,8 @@ import pandas as pd
 import time
 import json
 import requests
+from datetime import datetime, date
+
 # from lake_connect import flaminggorge, powell_latest, powell
 
 
@@ -12,10 +14,19 @@ app = dash.Dash(__name__)
 app.config['suppress_callback_exceptions']=True
 
 
-capacities = {'LAKE POWELL': 24322000, 'Lake Mead': 26134000, 'FLAMING GORGE RESERVOIR': 3788700, 'NAVAJO RESERVOIR': 1708600, 'BLUE MESA RESERVOIR': 940800 }
+capacities = {'Lake Powell Glen Canyon Dam and Powerplant': 24322000, 'Lake Mead Hoover Dam and Powerplant': 26134000, 'FLAMING GORGE RESERVOIR': 3788700, 'NAVAJO RESERVOIR': 1708600, 'BLUE MESA RESERVOIR': 940800 }
 
-today = time.strftime("%Y-%m-%d")
-print(today)
+# today = time.strftime("%Y-%m-%d")
+today = datetime.now()
+year = datetime.now().year
+# print(year)
+f_date = datetime(year, 1, 1)
+
+# print(today)
+delta = today - f_date
+days = delta.days
+# print(days)
+
 
 # url = 'https://water.usbr.gov/api/web/app.php/api/series?sites=lakepowell&parameters=Day.Inst.ReservoirStorage.af&start=2020-02-01&end=2020-02-20&format=csv'
 
@@ -106,11 +117,13 @@ def river_App():
                         dcc.RadioItems(
                             id='period',
                             options=[
-                                {'label':'D', 'value':'3'},
-                                {'label':'W', 'value':'9'},
-                                {'label':'Y', 'value':'367'},
+                                {'label':'D', 'value':'2'},
+                                {'label':'W', 'value':'8'},
+                                {'label':'M', 'value':'31'},
+                                {'label':'Y', 'value':'366'},
+                                {'label':'CY', 'value': days},
                             ],
-                            value='3',
+                            value='2',
                             labelStyle={'display': 'inline'},
                             ), 
                     ],
@@ -132,11 +145,38 @@ def river_App():
             ],
                 className='row'
             ),
+            html.Div([
+                html.Div([
+                    html.Div([
+                        html.Div([
+                            html.Div(id='lake-annual-min-table'),
+                        ]),
+                    ],
+                        className='four columns'
+                    ),
+                    
+                ],
+                    className='twelve columns'
+                ),
+            ],
+                className='row'
+            ),
             html.Div(id='selected-water-data', style={'display': 'none'}),
+            html.Div(id='powell-water-data', style={'display': 'none'}),
+            html.Div(id='mead-water-data', style={'display': 'none'}),
+            html.Div(id='combo-water-data', style={'display': 'none'}),
             html.Div(id='current-volume', style={'display': 'none'}),
             html.Div(id='site', style={'display': 'none'}),
             html.Div(id='cvd', style={'display': 'none'}),
             html.Div(id='last_v', style={'display': 'none'}),
+            html.Div(id='d_min', style={'display': 'none'})
+            # html.Div([
+            #     dcc.Interval(
+            #         id='interval-component',
+            #         interval=1000,
+            #         n_intervals=0
+            #     ),
+            # ]),
         ]
     )
 

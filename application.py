@@ -14,8 +14,6 @@ import pandas as pd
 import numpy as np
 from numpy import arange,array,ones
 from scipy import stats
-import psycopg2
-from sqlalchemy import create_engine
 from datetime import datetime, date, timedelta
 import time
 import csv 
@@ -24,6 +22,8 @@ import requests
 
 
 today = time.strftime("%Y-%m-%d")
+yesterday = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
+two_days_ago = datetime.strftime(datetime.now() - timedelta(2), '%Y-%m-%d')
 
 app = dash.Dash()
 application = app.server
@@ -95,33 +95,47 @@ def produce_stats(lake, site, data, date ):
     Output('last_v', 'children'),
     Output('cvd', 'children')],
     [Input('lake', 'value'),
-    Input('selected-water-data', 'children')])
-def get_current_volume(lake, data):
-    if lake == 'lakepowell' or lake == 'hdmlc':
-        data = pd.read_json(data)
-    
-        data['Date'] = pd.to_datetime(data['Date'])
-
-        data.set_index(['Date'], inplace=True)
+    Input('powell-water-data', 'children'),
+    Input('mead-water-data', 'children'),
+    Input('combo-water-data', 'children')])
+def get_current_volume(lake, powell_data, mead_data, combo_data):
+    if lake == 'lakepowell':
+    # if lake == 'lakepowell' or lake == 'hdmlc':
+        data = pd.read_json(powell_data)
+       
+       
         data = data.sort_index()
-        site = data.iloc[-2, 0]
-        # print(site)
-        current_volume = data.iloc[-2,3]
-        current_volume_date = data.index[-2]
+        site = data.iloc[-3, 0]
+      
+        current_volume = data.iloc[-1,1]
+        current_volume_date = data.index[-1]
         cvd = str(current_volume_date)
-        last_v = data.iloc[-3,3]
+        last_v = data.iloc[-1,0]
 
         return current_volume, site, last_v, cvd
-    elif lake == 'combo':
-        data = pd.read_json(data)
-        site = data.iloc[-1, 0]
-        # print(data)
-        # current_volume = data.iloc[-2,3]
-        current_volume = data.iloc[0, 7]
-        current_volume_date = data['Date'].iloc[0]
+
+    elif lake == 'hdmlc':
+        data = pd.read_json(mead_data)
+       
+       
+        data = data.sort_index()
+        site = data.iloc[-3, 0]
+      
+        current_volume = data.iloc[-1,1]
+        current_volume_date = data.index[-1]
         cvd = str(current_volume_date)
-        last_v = data.iloc[2, 7]
-        # print(cvd)
+        last_v = data.iloc[-1,0]
+
+        return current_volume, site, last_v, cvd
+
+
+    elif lake == 'combo':
+        data = pd.read_json(combo_data)
+        site = data.iloc[-1, 0]
+        current_volume = data['Value'][-1]
+        current_volume_date = data.index[-1]
+        cvd = str(current_volume_date)
+        last_v = data['Value'][-2]
 
         return current_volume, site, last_v, cvd
 
@@ -132,28 +146,27 @@ def get_current_volume(lake, data):
     Input('period', 'value'),
     Input('current-volume', 'children'),
     Input('last_v', 'children'),
-    Input('selected-water-data', 'children')])
-def produce_changes(lake, period, cv, last_v, data):
-    df = pd.read_json(data)
-    # print(last_v)
-    # print(cv)
-    # change = cv - last_v
-    # print(change)
+    Input('combo-water-data', 'children'),
+    Input('mead-water-data', 'children'),
+    Input('powell-water-data', 'children')])
+def produce_changes(lake, period, cv, last_v, combo_data, mead_data, powell_data):
+  
     if lake == 'combo':
-        df = df.set_index('Date')
-        data = df.sort_index()
-        current_volume = data.iloc[-1,6]
-        # current_volume = data['Value'][0]
-        # print(current_volume)
-        past_data = data.iloc[-(int(period)),6]
-        # past_data = data['Value'][1]
-        # print(past_data)
+        df = pd.read_json(combo_data)
+       
+        current_volume = df['Value'][-1]
+       
+        past_data = df['Value'][-(int(period))]
+       
         change = current_volume - past_data
-        annual_min = data.resample('Y').min()
-        # print(annual_min)
+       
+        annual_min = df.resample('Y').min()
+      
         annual_min_twok = annual_min[(annual_min.index.year > 1999)]
         rec_low = annual_min_twok['Value'].min()
-        dif_rl = data.iloc[-1,6] - rec_low
+       
+       
+        dif_rl = df['Value'][-1] - rec_low
 
         return html.Div([
                 html.Div('Change', style={'text-align':'center'}),
@@ -166,25 +179,58 @@ def produce_changes(lake, period, cv, last_v, data):
                 className='round1'
             ),
 
-    elif lake == 'lakepowell' or 'hdmlc':
-        df['Date'] = pd.to_datetime(df['Date'])
-        df = df.set_index('Date')
+    elif lake == 'lakepowell':
+        df = pd.read_json(powell_data)
+    # elif lake == 'lakepowell' or 'hdmlc':
+      
         data = df.sort_index()
-        # print(data)
-        current_volume = data.iloc[-2,3]
-        # current_volume = cv
-        # print(current_volume)
-        past_data = data.iloc[-(int(period)),3]
-        # past_data = last_v
-        # print(past_data)
+     
+        current_volume = data.iloc[-0,-0]
+        current_volume = data['Value'].iloc[-1]
+      
+       
+        past_data = data.iloc[-(int(period)),1]
+      
+        
         change = current_volume - past_data
+     
         annual_min = data.resample('Y').min()
-        # print(annual_min)
+      
         annual_min_twok = annual_min[(annual_min.index.year > 1999)]
         rec_low = annual_min_twok['Value'].min()
-        dif_rl = data.iloc[-2,3] - rec_low
+        dif_rl = data['Value'].iloc[-1] - rec_low
+ 
+        return html.Div([
+                    html.Div('Change', style={'text-align':'center'}),
+                    html.Div('{:,.0f}'.format(change), style={'text-align':'center'}),
+                    html.Div('Record Low', style={'text-align':'center'}),
+                    html.Div('{:,.0f}'.format(rec_low), style={'text-align':'center'}),
+                    html.Div('Difference', style={'text-align':'center'}),
+                    html.Div('{:,.0f}'.format(dif_rl), style={'text-align':'center'}),
+                ],
+                    className='round1'
+                ),
 
-    
+
+    elif lake == 'hdmlc':
+        df = pd.read_json(mead_data)
+      
+        data = df.sort_index()
+     
+        current_volume = data.iloc[-0,-0]
+        current_volume = data['Value'].iloc[-1]
+      
+       
+        past_data = data.iloc[-(int(period)),1]
+      
+        
+        change = current_volume - past_data
+     
+        annual_min = data.resample('Y').min()
+      
+        annual_min_twok = annual_min[(annual_min.index.year > 1999)]
+        rec_low = annual_min_twok['Value'].min()
+        dif_rl = data['Value'].iloc[-1] - rec_low
  
     return html.Div([
                 html.Div('Change', style={'text-align':'center'}),
@@ -197,146 +243,131 @@ def produce_changes(lake, period, cv, last_v, data):
                 className='round1'
             ),
 
-@app.callback(
-    Output('selected-water-data', 'children'),
+
+@app.callback([
+    Output('powell-water-data', 'children'),
+    Output('mead-water-data', 'children'),
+    Output('combo-water-data', 'children')],
     [Input('lake', 'value')])
-def clean_data(lake):
-    powell_data = 'https://water.usbr.gov/api/web/app.php/api/series?sites=lakepowell&parameters=Day.Inst.ReservoirStorage.af&start=1850-01-01&end=' + today + '&format=csv'
-
-    mead_data = 'https://water.usbr.gov/api/web/app.php/api/series?sites=hdmlc&parameters=Day.Inst.ReservoirStorage.af&start=1850-01-01&end=' + today + '&format=csv'
-
-    if lake == 'lakepowell':
-
-        with requests.Session() as s:
-            download = s.get(powell_data)
-
-            decoded_content = download.content.decode('utf-8')
-
-            cr = csv.reader(decoded_content.splitlines(), delimiter=',')
-
-            for i in range(4): next(cr)
-            df_water = pd.DataFrame(cr)
-            new_header = df_water.iloc[0]
-            df_water = df_water[1:]
-            df_water.columns = new_header
-            # print(df_water)
-            df_water['power level'] = 6124000
-        # print(df_water)
-        # chopped_df = df_water[df_water['Value'] != 0]
-        chopped_df = df_water.drop(df_water.index[0])
-        # print(chopped_df)
-        return chopped_df.to_json()
-            
-
-    elif lake == 'hdmlc':
-        with requests.Session() as s:
-            download = s.get(mead_data)
-
-            decoded_content = download.content.decode('utf-8')
-
-            cr = csv.reader(decoded_content.splitlines(), delimiter=',')
-
-            for i in range(4): next(cr)
-            df_water = pd.DataFrame(cr)
-            new_header = df_water.iloc[0]
-            df_water = df_water[1:]
-            df_water.columns = new_header
-            # print(df_water)
-            df_water['1090'] = 10857000
-            df_water['1075'] = 9601000
-            df_water['1050'] = 7683000
-            # df['1045'] = 7326000
-            # df['1040'] = 6978000
-            # df['1035'] = 6638000
-            # df['1030'] = 6305000
-            df_water['1025'] = 5981000
-        # print(df_water)
-        # chopped_df = df_water[df_water['Value'] != 0]
-        chopped_df = df_water.drop(df_water.index[0])
-        # print(chopped_df)
-        return chopped_df.to_json()
-
-    elif lake == 'combo':
-        with requests.Session() as s:
-            p_download = s.get(powell_data)
-
-            p_decoded_content = p_download.content.decode('utf-8')
-
-            crp = csv.reader(p_decoded_content.splitlines(), delimiter=',')
-
-            for i in range(4): next(crp)
-            df_powell_water = pd.DataFrame(crp)
-            new_powell_header = df_powell_water.iloc[0]
-            df_powell_water = df_powell_water[1:]
-            df_powell_water.columns = new_powell_header
-
-        with requests.Session() as t:
-            m_download = t.get(mead_data)
-            m_decoded_content = m_download.content.decode('utf-8')
-            crm = csv.reader(m_decoded_content.splitlines(), delimiter=',')
-            for i in range(4): next(crm)
-            df_mead_water = pd.DataFrame(crm)
-            new_mead_header = df_mead_water.iloc[0]
-            df_mead_water = df_mead_water[1:]
-            df_mead_water.columns = new_mead_header
-
-
-        start_date = date(1963, 6, 29)
-        date_now = date.today()
-        delta = date_now - start_date
-        days = delta.days
-        df_mead_water = df_mead_water[:days]
-        df_total = pd.merge(df_mead_water, df_powell_water, how='inner', left_index=True, right_index=True)
+def clean_powell_data(lake):
     
-        df_total.rename(columns={'Date_x':'Date'}, inplace=True)
-     
-        df_total = df_total.drop(['Date_y', 'Parameter_x', 'Parameter_y', 'Units_x', 'Units_y'], axis=1)
-        df_total['Value_x'] = df_total['Value_x'].astype(int)
-        df_total['Value_y'] = df_total['Value_y'].astype(int)
-        df_total['Value'] = df_total['Value_x'] + df_total['Value_y']
-        # print(df_total)
-        # chopped_df = df_total[df_total['Value'] != 0]
-        chopped_df = df_total.drop(df_total.index[0])
-        return chopped_df.to_json()
+    powell_data = 'https://data.usbr.gov/rise/api/result/download?type=csv&itemId=509&before=' + today + '&after=1963-06-28&filename=Lake%20Powell%20Glen%20Canyon%20Dam%20and%20Powerplant%20Daily%20Lake%2FReservoir%20Storage-af%20Time%20Series%20Data%20'
+
+    mead_data = 'https://data.usbr.gov/rise/api/result/download?type=csv&itemId=6124&before=' + today + '&after=1937-05-28&filename=Lake%20Mead%20Hoover%20Dam%20and%20Powerplant%20Daily%20Lake%2FReservoir%20Storage-af%20Time%20Series%20Data%20(1937-05-28%20-%202020-11-30)&order=ASC'
+
+    # if lake == 'lakepowell':
+
+    with requests.Session() as s:
+
+        powell_download = s.get(powell_data)
+        
+        powell_decoded_content = powell_download.content.decode('utf-8')
+    
+        crp = csv.reader(powell_decoded_content.splitlines(), delimiter=',')
+        
+        
+        for i in range(9): next(crp)
+        df_powell_water = pd.DataFrame(crp)
+        
+        df_powell_water = df_powell_water.drop(df_powell_water.columns[[1,3,4,5]], axis=1)
+        df_powell_water.columns = ["Site", "Value", "Date"]
+    
+        df_powell_water = df_powell_water[1:]
+        
+        df_powell_water['power level'] = 6124000
+
+        df_powell_water = df_powell_water.set_index("Date")
+        df_powell_water = df_powell_water.sort_index()
+    
+    powell_df = df_powell_water.drop(df_powell_water.index[0])
+
+    with requests.Session() as s:
+        mead_download = s.get(mead_data)
+
+        mead_decoded_content = mead_download.content.decode('utf-8')
+
+        crm = csv.reader(mead_decoded_content.splitlines(), delimiter=',')
+
+        for i in range(9): next(crm)
+        df_mead_water = pd.DataFrame(crm)
+        df_mead_water = df_mead_water.drop(df_mead_water.columns[[1,3,4,5]], axis=1)
+        df_mead_water.columns = ["Site", "Value", "Date"]
+    
+        df_mead_water['1090'] = 10857000
+        df_mead_water['1075'] = 9601000
+        df_mead_water['1050'] = 7683000
+        df_mead_water['1025'] = 5981000
+
+        df_mead_water = df_mead_water.set_index("Date")
+        df_mead_water = df_mead_water.sort_index()
+        
+    mead_df = df_mead_water.drop(df_mead_water.index[0])
+
+    # print(mead_df.head())
+    # print(powell_df.head())
+
+           
+    start_date = date(1963, 6, 29)
+    date_now = date.today()
+    delta = date_now - start_date
+    
+    days = delta.days
+    df_mead_water = mead_df[9527:]
+    
+    df_total = pd.merge(df_mead_water, df_powell_water, how='inner', left_index=True, right_index=True)
+
+    df_total.rename(columns={'Date_x':'Date'}, inplace=True)
+    
+    df_total['Value_x'] = df_total['Value_x'].astype(int)
+    df_total['Value_y'] = df_total['Value_y'].astype(int)
+    df_total['Value'] = df_total['Value_x'] + df_total['Value_y']
+    
+    combo_df = df_total.drop(df_total.index[0])
+    # print(combo_df.head())
+
+    return powell_df.to_json(), mead_df.to_json(), combo_df.to_json()
 
 @app.callback(
     Output('lake-levels', 'figure'),
     [Input('lake', 'value'),
-    Input('selected-water-data', 'children')])
-def lake_graph(lake, data):
-    # print(lake)
-    df = pd.read_json(data)
-    df['Date'] = pd.to_datetime(df['Date'])
-    df = df.set_index('Date')
-    data = df.sort_index()
-    # print(df)
+    Input('powell-water-data', 'children'),
+    Input('mead-water-data', 'children'),
+    Input('combo-water-data', 'children')])
+def lake_graph(lake, powell_data, mead_data, combo_data):
+    powell_df = pd.read_json(powell_data)
+    mead_df = pd.read_json(mead_data)
+    combo_df = pd.read_json(combo_data)
+
     traces = []
     if lake == 'hdmlc':
-        title = df['Site'][0]
-        for column in data.columns[3:]:
+      
+        data = mead_df.sort_index()
+        title = 'Lake Mead'
+        for column in mead_df.columns[1:]:
             traces.append(go.Scatter(
-                y = df[column],
-                x = df.index,
+                y = mead_df[column],
+                x = mead_df.index,
                 name = column
             ))
     elif lake == 'lakepowell':
-        title = df['Site'][0]
+      
+        data = powell_df.sort_index()
+        title = 'Lake Powell'
         traces.append(go.Scatter(
-            y = df['Value'],
-            x = df.index,
+            y = powell_df['Value'],
+            x = powell_df.index,
             name='Water Level'
         )),
         traces.append(go.Scatter(
-            y = df['power level'],
-            x = df.index,
+            y = powell_df['power level'],
+            x = powell_df.index,
             name = 'Power level'
         )),
     elif lake == 'combo':
         title = 'Lake Powell and Lake Mead'
-        # print(data)
         traces.append(go.Scatter(
-            y = df['Value'],
-            x = df.index,
+            y = combo_df['Value'],
+            x = combo_df.index,
             name='Water Level'
         )),
 
