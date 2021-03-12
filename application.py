@@ -22,8 +22,7 @@ import requests
 
 
 today = time.strftime("%Y-%m-%d")
-yesterday = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
-two_days_ago = datetime.strftime(datetime.now() - timedelta(2), '%Y-%m-%d')
+
 
 app = dash.Dash()
 application = app.server
@@ -251,9 +250,9 @@ def produce_changes(lake, period, cv, last_v, combo_data, mead_data, powell_data
     [Input('lake', 'value')])
 def clean_powell_data(lake):
     
-    powell_data = 'https://data.usbr.gov/rise/api/result/download?type=csv&itemId=509&before=' + today + '&after=1963-06-28&filename=Lake%20Powell%20Glen%20Canyon%20Dam%20and%20Powerplant%20Daily%20Lake%2FReservoir%20Storage-af%20Time%20Series%20Data%20'
+    powell_data = 'https://data.usbr.gov/rise/api/result/download?type=csv&itemId=509&before=2021-03-08&after=1963-06-28&filename=Lake%20Powell%20Glen%20Canyon%20Dam%20and%20Powerplant%20Daily%20Lake%2FReservoir%20Storage-af%20Time%20Series%20Data%20'
 
-    mead_data = 'https://data.usbr.gov/rise/api/result/download?type=csv&itemId=6124&before=' + today + '&after=1937-05-28&filename=Lake%20Mead%20Hoover%20Dam%20and%20Powerplant%20Daily%20Lake%2FReservoir%20Storage-af%20Time%20Series%20Data%20(1937-05-28%20-%202020-11-30)&order=ASC'
+    mead_data = 'https://data.usbr.gov/rise/api/result/download?type=csv&itemId=6124&before=2021-03-08&after=1937-05-28&filename=Lake%20Mead%20Hoover%20Dam%20and%20Powerplant%20Daily%20Lake%2FReservoir%20Storage-af%20Time%20Series%20Data%20(1937-05-28%20-%202020-11-30)&order=ASC'
 
     # if lake == 'lakepowell':
 
@@ -304,7 +303,7 @@ def clean_powell_data(lake):
     mead_df = df_mead_water.drop(df_mead_water.index[0])
 
     # print(mead_df.head())
-    # print(powell_df.head())
+    print(powell_df.head())
 
            
     start_date = date(1963, 6, 29)
