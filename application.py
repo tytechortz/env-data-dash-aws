@@ -25,7 +25,8 @@ today = time.strftime("%Y-%m-%d")
 
 
 app = dash.Dash()
-application = app.server
+# application = app.server
+server = app.server
 
 
 app.config.suppress_callback_exceptions = True
