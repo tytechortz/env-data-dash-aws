@@ -18,7 +18,7 @@ body = dbc.Container([
          className='six columns'
       ),
       html.Div([
-         html.Img(src='assets/ase.jpg', height=350)
+         html.Img(src='static/assets/ase.jpg', height=350)
       ],
          className='five columns'
       ),
@@ -58,7 +58,7 @@ body = dbc.Container([
          className='six columns'
       ),
       html.Div([
-         html.Img(src='assets/hoover-dam.jpg', height=350)
+         html.Img(src='static/assets/hoover-dam.jpg', height=350)
       ],
          className='five columns'
       ),
@@ -80,7 +80,7 @@ body = dbc.Container([
          className='six columns'
       ),
       html.Div([
-         html.Img(src='assets/mauna-loa.jpg', height=350)
+         html.Img(src='static/assets/mauna-loa.jpg', height=350)
       ],
          className='five columns'
       ),
