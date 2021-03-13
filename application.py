@@ -25,10 +25,10 @@ today = time.strftime("%Y-%m-%d")
 
 
 app = dash.Dash(name=__name__, 
-                title"Environnmental Data Dashboard",,
+                title="Environnmental Data Dashboard",,
                 assets_folder="static",
                 assets_url_path="static")
-                
+
 application = app.server
 # server = app.server
 
